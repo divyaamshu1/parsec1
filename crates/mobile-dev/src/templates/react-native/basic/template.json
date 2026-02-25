@@ -1,0 +1,6 @@
+{
+  "name": "Basic React Native App",
+  "description": "Basic React Native application template",
+  "framework": "ReactNative",
+  "version": "1.0.0"
+}

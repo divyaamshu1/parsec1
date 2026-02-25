@@ -1,0 +1,6 @@
+{
+  "name": "Basic Android App",
+  "description": "Basic Android native application template",
+  "framework": "NativeAndroid",
+  "version": "1.0.0"
+}

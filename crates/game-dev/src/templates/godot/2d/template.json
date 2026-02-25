@@ -1,0 +1,6 @@
+{
+  "name": "2D Game",
+  "description": "Basic 2D game template for Godot",
+  "engine": "Godot",
+  "version": "1.0.0"
+}

@@ -1,0 +1,64 @@
+[package]
+name = "parsec-mobile-dev"
+version = "0.1.0"
+edition = "2021"
+description = "Unified mobile development system for Parsec IDE"
+authors = ["divyaamshu1"]
+license = "MIT"
+repository = "https://github.com/divyaamshu1/parsec"
+homepage = "https://github.com/divyaamshu1/parsec"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+# Core
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+dirs = "5.0"
+parking_lot = { workspace = true }
+regex = { workspace = true }
+
+# Process management
+duct = "0.13"
+which = "5.0"
+
+# File watching
+notify = "6.1"
+
+# Compression
+zip = "0.6"
+tar = "0.4"
+flate2 = "1.0"
+
+# Parsec dependencies
+parsec-core = { path = "../../core" }
+parsec-extensions = { path = "../../extensions" }
+extension-sdk = { path = "../extension-sdk" }
+
+[dev-dependencies]
+tempfile = "3.8"
+criterion = "0.5"
+
+[features]
+default = ["full"]
+full = ["android", "ios", "flutter", "react-native"]
+android = []
+ios = []
+flutter = []
+react-native = []
+ionic = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true

@@ -1,0 +1,6 @@
+{
+  "name": "Basic iOS App",
+  "description": "Basic iOS native application template",
+  "framework": "NativeIOS",
+  "version": "1.0.0"
+}

@@ -1,0 +1,81 @@
+[package]
+name = "parsec-gui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "GUI frontend for Parsec IDE"
+repository = "https://github.com/divyaamshu1/parsec"
+homepage = "https://github.com/divyaamshu1/parsec"
+
+[lib]
+name = "parsec_gui"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "parsec"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Tauri v2 - CORE
+tauri = { version = "2.10.2", features = [
+    "devtools"
+] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Tauri PLUGINS
+tauri-plugin-clipboard = "2.1.11"
+tauri-plugin-dialog = "2.6.0"
+tauri-plugin-fs = "2.4.5"
+tauri-plugin-http = "2.5.7"
+tauri-plugin-notification = "2.3.3"
+tauri-plugin-os = "2.3.2"
+tauri-plugin-shell = "2.3.5"
+tauri-plugin-upload = "2.4.0"
+tauri-plugin-window-state = "2.4.1"
+
+# File watcher for auto-refresh
+notify = "8.2.0"
+
+# HTTP Server for web-based IDE
+tiny_http = "0.12"
+webbrowser = "1.1"
+tungstenite = "0.28"
+url = "2.5"
+
+# Parsec dependencies (REMOVED parsec-cli - no circular dependency)
+parsec-core = { path = "../core" }
+parsec-extensions = { path = "../extensions" }
+parsec-ai = { path = "../ai" }
+parsec-vscode-compat = { path = "../vscode-compat" }
+bytes = "1.11.1"
+
+[dependencies.winapi]
+version = "0.3"
+features = ["winuser", "shellapi"]
+
+
+[build-dependencies]
+tauri-build = "2.5.5"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+
+

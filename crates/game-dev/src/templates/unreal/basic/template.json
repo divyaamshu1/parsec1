@@ -1,0 +1,6 @@
+{
+  "name": "Basic C++ Project",
+  "description": "Basic C++ project for Unreal Engine",
+  "engine": "Unreal",
+  "version": "1.0.0"
+}

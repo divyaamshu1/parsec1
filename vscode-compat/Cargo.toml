@@ -1,0 +1,68 @@
+[package]
+name = "parsec-vscode-compat"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "VS Code extension compatibility layer for Parsec IDE"
+repository = "https://github.com/divyaamshu1/parsec"     # <-- ADD THIS LINE
+homepage = "https://github.com/divyaamshu1/parsec" 
+keywords = ["vscode", "ide", "extension", "compatibility"]
+categories = ["development-tools", "gui"]
+
+[dependencies]
+# Workspace dependencies
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }      # <-- NOW WORKS
+tokio = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+regex = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+dirs = { workspace = true }
+thiserror = "2.0"
+which = "8"
+tempfile = "3.26"
+
+# JS/Node runtime
+quick-js = { git = "https://github.com/theduke/quickjs-rs", optional = true }
+nodejs-sys = { version = "0.15", optional = true }
+
+# WebView
+tauri = { version = "2.10", optional = true }
+
+# File system and utilities
+pathdiff = "0.2"
+mime_guess = "2.0"
+
+# VS Code marketplace
+reqwest = { version = "0.13", features = ["json", "stream"] }
+zip = "8.1"
+base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
+
+# Parsec dependencies
+parsec-core = { path = "../core" }
+parsec-extensions = { path = "../extensions" }
+extension-registry = { path = "../crates/extension-registry" }
+
+[dev-dependencies]
+criterion = "0.8"
+
+
+[features]
+default = ["js-runtime"]
+js-runtime = ["dep:quick-js"]
+full-node = ["dep:nodejs-sys"]
+webview = ["dep:tauri"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true

@@ -1,0 +1,48 @@
+target/
+**/target/
+**/debug/
+**/release/
+**/*.log
+**/*.cache
+.idea/
+.vscode/
+dist/
+gui/dist/
+node_modules/
+*.rs.bk
+Cargo.lock
+*.tmp
+*.local
+/.env
+/.cargo-lock
+*.exe
+*.pdb
+*.dll
+*.so
+*.dylib
+Thumbs.db
+desktop.ini# Rust/Cargo
+/target/
+/**/*.rs.bk
+/Cargo.lock
+
+# Visual Studio Code
+/.vscode/
+
+# Node (frontend deps if any)
+/node_modules/
+
+# Dist / build outputs
+/gui/dist/
+
+# OS
+Thumbs.db
+.DS_Store
+/target
+**/*.rs.bk
+*.swp
+*.swo
+.idea
+.vscode
+*.lock
+.DS_Store

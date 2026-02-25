@@ -1,0 +1,77 @@
+[package]
+name = "parsec-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core engine for Parsec IDE - editor, terminal, git, syntax, process management"
+repository = "https://github.com/divyaamshu1/parsec"     # <-- ADD THIS LINE
+homepage = "https://github.com/divyaamshu1/parsec" 
+keywords = ["ide", "editor", "terminal", "git", "syntax"]
+categories = ["development-tools", "text-editors"]
+
+[lib]
+name = "parsec_core"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+# Text editing
+ropey = "1.6"
+unicode-segmentation = "1.12"
+unicode-width = "0.2"
+
+# Async runtime
+tokio = { version = "1.49", features = ["full"] }
+futures = "0.3"
+
+# Error handling & logging
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+log = "0.4"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Syntax highlighting (optional)
+tree-sitter = { version = "0.20", optional = true }
+tree-sitter-highlight = { version = "0.20", optional = true }
+
+# Git integration (optional)
+git2 = { version = "0.20", optional = true }
+
+# File system watching
+notify = "8.2"
+
+# Process management
+regex = "1.12"
+
+# Utilities
+chrono = "0.4"
+uuid = { version = "1.21", features = ["v4", "serde"] }
+parking_lot = "0.12"
+dirs = "6.0"
+pathdiff = "0.2"
+which = "8.0"
+
+[dev-dependencies]
+tempfile = "3.26"
+criterion = "0.8"
+
+[features]
+default = ["full"]
+full = ["git", "syntax"]
+git = ["dep:git2"]
+syntax = ["dep:tree-sitter", "dep:tree-sitter-highlight"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[package.metadata.docs.rs]
+features = ["full"]
+rustdoc-args = ["--cfg", "docsrs"]

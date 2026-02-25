@@ -1,0 +1,68 @@
+[package]
+name = "parsec-api-client"
+version = "0.1.0"
+edition = "2021"
+description = "Universal API development tools for Parsec IDE"
+authors = ["divyaamshu1"]
+license = "MIT"
+repository = "https://github.com/divyaamshu1/parsec"
+homepage = "https://github.com/divyaamshu1/parsec"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+# Core
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }
+
+# HTTP/REST
+reqwest = { version = "0.11", features = ["json", "stream", "multipart"] }
+http = "1.0"
+
+# GraphQL
+graphql_client = "0.12"
+graphql-parser = "0.4"
+
+# WebSocket
+tokio-tungstenite = "0.20"
+tungstenite = "0.20"
+
+# gRPC
+tonic = "0.11"
+prost = "0.12"
+
+# WebAssembly
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+
+# Parsec dependencies
+parsec-core = { path = "../../core" }
+
+[dev-dependencies]
+tempfile = "3.8"
+wiremock = "0.5"
+mockito = "1.0"
+
+[features]
+default = ["rest", "graphql", "websocket", "grpc"]
+rest = []
+graphql = []
+websocket = []
+grpc = []
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true

@@ -1,0 +1,9 @@
+[package]
+name = "loader_trace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winapi = { version = "0.3", features = ["debugapi", "processthreadsapi", "minwinbase", "minwindef", "winbase", "fileapi", "handleapi", "synchapi", "tlhelp32"] }
+
+[workspace]

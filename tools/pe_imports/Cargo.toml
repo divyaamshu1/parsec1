@@ -1,0 +1,10 @@
+[package]
+name = "pe_imports"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+goblin = "0.6"
+anyhow = "1.0"
+
+[workspace]
