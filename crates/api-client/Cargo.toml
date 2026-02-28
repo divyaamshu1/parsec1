@@ -1,5 +1,5 @@
 [package]
-name = "parsec-api-client"
+name = "parsec-api"
 version = "0.1.0"
 edition = "2021"
 description = "Universal API development tools for Parsec IDE"

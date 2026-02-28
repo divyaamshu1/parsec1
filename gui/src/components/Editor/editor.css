@@ -1,0 +1,198 @@
+.editor-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.editor-container.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  text-align: center;
+  color: #888;
+}
+
+.empty-state h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  font-weight: 300;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+.ai-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--status-bg);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ai-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.line-numbers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  background: var(--bg);
+  color: #858585;
+  text-align: right;
+  padding: 10px 5px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.line-number {
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.minimap {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.search-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 300px;
+}
+
+.search-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 8px;
+  color: #888;
+}
+
+.search-input-group input {
+  flex: 1;
+  padding: 6px 8px 6px 32px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.match-count {
+  position: absolute;
+  right: 8px;
+  color: #888;
+  font-size: 12px;
+}
+
+.search-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.search-actions button {
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-actions button:hover {
+  background: var(--hover);
+}
+
+.search-replace {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-replace input {
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.replace-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.replace-actions button {
+  padding: 4px 12px;
+  background: var(--status-bg);
+  border: none;
+  color: white;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.replace-actions button:hover {
+  background: #1a8cd8;
+}

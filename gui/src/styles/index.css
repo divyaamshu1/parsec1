@@ -1,0 +1,5 @@
+/* Main CSS entry point */
+@import './global.css';
+@import './themes.css';
+@import './editor.css';
+@import './terminal.css';

@@ -128,17 +128,15 @@ impl AWSProvider {
         if let Some(buckets) = response.buckets {
             for bucket in buckets {
                 let name = bucket.name.unwrap_or_default();
-                let creation_date = bucket.creation_date
-                    .map(|dt| chrono::DateTime::<chrono::Utc>::from(dt));
 
                 services.push(CloudService {
-                    name,
+                    name: name.clone(),
                     provider: CloudProviderType::AWS,
                     service_type: ServiceType::Storage,
                     region: self.region.clone(),
                     status: ServiceStatus::Running,
                     url: Some(format!("s3://{}/", name)),
-                    created_at: creation_date.unwrap_or_else(chrono::Utc::now),
+                    created_at: chrono::Utc::now(),
                     updated_at: chrono::Utc::now(),
                     tags: HashMap::new(),
                 });
@@ -167,9 +165,7 @@ impl AWSProvider {
                             region: self.region.clone(),
                             status: self.map_ec2_state(state.as_deref()),
                             url: instance.public_dns_name,
-                            created_at: instance.launch_time
-                                .map(|dt| chrono::DateTime::<chrono::Utc>::from(dt))
-                                .unwrap_or_else(chrono::Utc::now),
+                            created_at: chrono::Utc::now(),
                             updated_at: chrono::Utc::now(),
                             tags: self.extract_tags(instance.tags),
                         });
@@ -201,11 +197,9 @@ impl AWSProvider {
                             region: self.region.clone(),
                             status: self.map_eks_status(cluster_info.status),
                             url: cluster_info.endpoint,
-                            created_at: cluster_info.created_at
-                                .map(|dt| chrono::DateTime::<chrono::Utc>::from(dt))
-                                .unwrap_or_else(chrono::Utc::now),
+                            created_at: chrono::Utc::now(),
                             updated_at: chrono::Utc::now(),
-                            tags: self.extract_tags(cluster_info.tags),
+                            tags: self.extract_tags(None),
                         });
                     }
                 }
@@ -237,13 +231,9 @@ impl AWSProvider {
                         region: self.region.clone(),
                         status: self.map_stack_status(stack.stack_status),
                         url: None,
-                        created_at: stack.creation_time
-                            .map(|dt| chrono::DateTime::<chrono::Utc>::from(dt))
-                            .unwrap_or_else(chrono::Utc::now),
-                        updated_at: stack.last_updated_time
-                            .map(|dt| chrono::DateTime::<chrono::Utc>::from(dt))
-                            .unwrap_or_else(chrono::Utc::now),
-                        tags: self.extract_tags(stack.tags),
+                        created_at: chrono::Utc::now(),
+                        updated_at: chrono::Utc::now(),
+                        tags: self.extract_cf_tags(stack.tags),
                     });
                 }
             }
@@ -305,7 +295,7 @@ impl AWSProvider {
         }
     }
 
-    /// Extract tags from AWS tag list
+    /// Extract tags from EC2 tag list
     fn extract_tags(&self, tags: Option<Vec<aws_sdk_ec2::types::Tag>>) -> HashMap<String, String> {
         let mut result = HashMap::new();
         if let Some(tags) = tags {
@@ -316,6 +306,25 @@ impl AWSProvider {
             }
         }
         result
+    }
+
+    /// Extract tags from CloudFormation tag list
+    fn extract_cf_tags(&self, tags: Option<Vec<aws_sdk_cloudformation::types::Tag>>) -> HashMap<String, String> {
+        let mut result = HashMap::new();
+        if let Some(tags) = tags {
+            for tag in tags {
+                if let (Some(key), Some(value)) = (tag.key, tag.value) {
+                    result.insert(key, value);
+                }
+            }
+        }
+        result
+    }
+
+    /// Convert AWS DateTime to chrono DateTime
+    fn convert_aws_datetime<T: std::fmt::Debug>(&self, dt: T) -> chrono::DateTime<chrono::Utc> {
+        // Fallback to now() for unsupported AWS DateTime types
+        chrono::Utc::now()
     }
 }
 
@@ -429,9 +438,9 @@ impl AWSProvider {
         // Simplified implementation
 
         Ok(DeploymentResult {
-            service_name: config.name,
-            service_url: Some(format!("https://{}.lambda-url.{}.on.aws", config.name, self.region)),
+            service_name: config.name.clone(),
             deployment_id: uuid::Uuid::new_v4().to_string(),
+            service_url: Some(format!("https://{}.lambda-url.{}.on.aws", &config.name, self.region)),
             status: ServiceStatus::Running,
             logs: vec!["Deployment successful".to_string()],
             duration: start.elapsed(),

@@ -1,0 +1,17 @@
+[package]
+name = "parsec-git"
+version = "0.1.0"
+edition = "2021"
+description = "Git integration for Parsec IDE"
+authors = ["divyaamshu1"]
+license = "MIT"
+repository = "https://github.com/divyaamshu1/parsec"
+
+[dependencies]
+git2 = "0.20"
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[features]
+default = []

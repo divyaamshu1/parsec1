@@ -36,6 +36,9 @@ wiremock = { version = "0.5", optional = true }
 goose = { version = "0.17", optional = true }
 drill = { version = "0.8", optional = true }
 
+# Database testing
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio"], optional = true, default-features = false }
+
 # Reporting
 tera = { version = "1.19", optional = true }
 handlebars = { version = "5.1", optional = true }
@@ -45,13 +48,16 @@ plotly = { version = "0.8", optional = true }
 parsec-core = { path = "../../core" }
 parsec-extensions = { path = "../../extensions" }
 
+# Utility crates
+num_cpus = "1.16"
+
 [dev-dependencies]
 tempfile = "3.8"
 
 [features]
 default = ["unit", "integration", "e2e", "coverage", "load"]
 unit = ["dep:criterion", "dep:proptest", "dep:quickcheck", "dep:mockall"]
-integration = ["dep:mockito", "dep:wiremock"]
+integration = ["dep:mockito", "dep:wiremock", "dep:sqlx"]
 e2e = []
 coverage = []
 load = ["dep:goose", "dep:drill"]

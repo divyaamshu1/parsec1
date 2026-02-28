@@ -1,0 +1,400 @@
+/* ===== DARK THEME (DEFAULT) ===== */
+:root {
+  --bg: #1e1e1e;
+  --bg-secondary: #252526;
+  --fg: #d4d4d4;
+  --fg-secondary: #969696;
+  --primary: #007acc;
+  --primary-hover: #1a8cd8;
+  --secondary: #6c757d;
+  --accent: #9cdcfe;
+  --success: #6a9955;
+  --success-bg: rgba(106, 153, 85, 0.1);
+  --warning: #cca700;
+  --warning-bg: rgba(204, 167, 0, 0.1);
+  --error: #f48771;
+  --error-hover: #f6a28c;
+  --error-bg: rgba(244, 135, 113, 0.1);
+  --info: #3794ff;
+  --selection: #264f78;
+  --border: #3c3c3c;
+  --border-light: #2a2d2e;
+  --hover: #2a2d2e;
+  --active: #094771;
+  
+  /* Sidebar */
+  --sidebar-bg: #252526;
+  --sidebar-hover: #2a2d2e;
+  --sidebar-active: #37373d;
+  
+  /* Tabs */
+  --tab-bg: #2d2d2d;
+  --tab-active: #1e1e1e;
+  --tab-border: #3c3c3c;
+  
+  /* Status Bar */
+  --status-bg: #007acc;
+  --status-fg: #ffffff;
+  
+  /* Scrollbar */
+  --scrollbar-track: #2d2d2d;
+  --scrollbar-thumb: #5a5a5a;
+  --scrollbar-thumb-hover: #6a6a6a;
+  
+  /* Inputs */
+  --input-bg: #3c3c3c;
+  --input-border: #1e1e1e;
+  --placeholder: #6d6d6d;
+  
+  /* Buttons */
+  --button-bg: #3c3c3c;
+  --button-border: #1e1e1e;
+  --button-hover: #4c4c4c;
+  
+  /* Modals */
+  --modal-bg: #2d2d2d;
+  --modal-border: #3c3c3c;
+  --modal-shadow: rgba(0, 0, 0, 0.3);
+  
+  /* Editor */
+  --editor-bg: #1e1e1e;
+  --editor-line-number: #858585;
+  --editor-gutter: #2d2d2d;
+  --editor-fold: #858585;
+  
+  /* Terminal */
+  --terminal-bg: #1e1e1e;
+  --terminal-fg: #cccccc;
+  
+  /* Git */
+  --git-added: #6a9955;
+  --git-modified: #cca700;
+  --git-deleted: #f48771;
+  --git-untracked: #888;
+  
+  /* Debug */
+  --debug-breakpoint: #f48771;
+  --debug-stack: #3794ff;
+  --debug-variable: #9cdcfe;
+  
+  /* AI */
+  --ai-user: #3794ff;
+  --ai-assistant: #6a9955;
+  --ai-suggestion: #2d2d2d;
+  
+  /* Empty State */
+  --empty-state: #888;
+  
+  /* Toggle */
+  --toggle-off: #4c4c4c;
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --fg: #333333;
+  --fg-secondary: #666666;
+  --primary: #007acc;
+  --primary-hover: #1a8cd8;
+  --secondary: #6c757d;
+  --accent: #005a9e;
+  --success: #2e7d32;
+  --success-bg: rgba(46, 125, 50, 0.1);
+  --warning: #f57c00;
+  --warning-bg: rgba(245, 124, 0, 0.1);
+  --error: #d32f2f;
+  --error-hover: #f44336;
+  --error-bg: rgba(211, 47, 47, 0.1);
+  --info: #1976d2;
+  --selection: #add6ff;
+  --border: #e0e0e0;
+  --border-light: #f0f0f0;
+  --hover: #f5f5f5;
+  --active: #e3f2fd;
+  
+  --sidebar-bg: #f3f3f3;
+  --sidebar-hover: #eaeaea;
+  --sidebar-active: #dadada;
+  
+  --tab-bg: #ececec;
+  --tab-active: #ffffff;
+  --tab-border: #e0e0e0;
+  
+  --status-bg: #007acc;
+  --status-fg: #ffffff;
+  
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #c0c0c0;
+  --scrollbar-thumb-hover: #a0a0a0;
+  
+  --input-bg: #ffffff;
+  --input-border: #e0e0e0;
+  --placeholder: #999999;
+  
+  --button-bg: #e0e0e0;
+  --button-border: #cccccc;
+  --button-hover: #d0d0d0;
+  
+  --modal-bg: #ffffff;
+  --modal-border: #e0e0e0;
+  --modal-shadow: rgba(0, 0, 0, 0.1);
+  
+  --editor-bg: #ffffff;
+  --editor-line-number: #888888;
+  --editor-gutter: #f0f0f0;
+  
+  --terminal-bg: #ffffff;
+  --terminal-fg: #333333;
+  
+  --git-added: #2e7d32;
+  --git-modified: #f57c00;
+  --git-deleted: #d32f2f;
+  
+  --debug-breakpoint: #d32f2f;
+  --debug-stack: #1976d2;
+  --debug-variable: #005a9e;
+  
+  --ai-user: #1976d2;
+  --ai-assistant: #2e7d32;
+  --ai-suggestion: #f5f5f5;
+  
+  --empty-state: #999999;
+  --toggle-off: #cccccc;
+}
+
+/* ===== HIGH CONTRAST DARK ===== */
+[data-theme="high-contrast-dark"] {
+  --bg: #000000;
+  --bg-secondary: #0a0a0a;
+  --fg: #ffffff;
+  --fg-secondary: #cccccc;
+  --primary: #ffff00;
+  --primary-hover: #ffff33;
+  --secondary: #00ff00;
+  --accent: #00ffff;
+  --success: #00ff00;
+  --warning: #ffff00;
+  --error: #ff0000;
+  --info: #00ffff;
+  --selection: #0000ff;
+  --border: #ffffff;
+  --border-light: #333333;
+  --hover: #333333;
+  --active: #0000ff;
+  
+  --sidebar-bg: #000000;
+  --sidebar-hover: #333333;
+  --sidebar-active: #0000ff;
+  
+  --tab-bg: #0a0a0a;
+  --tab-active: #000000;
+  --tab-border: #ffffff;
+  
+  --status-bg: #ffffff;
+  --status-fg: #000000;
+  
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #ffffff;
+  --scrollbar-thumb-hover: #cccccc;
+  
+  --input-bg: #000000;
+  --input-border: #ffffff;
+  --placeholder: #999999;
+  
+  --button-bg: #000000;
+  --button-border: #ffffff;
+  --button-hover: #333333;
+  
+  --modal-bg: #000000;
+  --modal-border: #ffffff;
+  --modal-shadow: rgba(255, 255, 255, 0.3);
+  
+  --git-added: #00ff00;
+  --git-modified: #ffff00;
+  --git-deleted: #ff0000;
+  
+  --empty-state: #666666;
+  --toggle-off: #333333;
+}
+
+/* ===== HIGH CONTRAST LIGHT ===== */
+[data-theme="high-contrast-light"] {
+  --bg: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --fg: #000000;
+  --fg-secondary: #333333;
+  --primary: #0000ff;
+  --primary-hover: #3333ff;
+  --secondary: #008000;
+  --accent: #ff00ff;
+  --success: #008000;
+  --warning: #ffff00;
+  --error: #ff0000;
+  --info: #0000ff;
+  --selection: #add8e6;
+  --border: #000000;
+  --border-light: #cccccc;
+  --hover: #f0f0f0;
+  --active: #add8e6;
+  
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f0f0f0;
+  --sidebar-active: #add8e6;
+  
+  --tab-bg: #f5f5f5;
+  --tab-active: #ffffff;
+  --tab-border: #000000;
+  
+  --status-bg: #000000;
+  --status-fg: #ffffff;
+  
+  --scrollbar-track: #ffffff;
+  --scrollbar-thumb: #000000;
+  --scrollbar-thumb-hover: #333333;
+  
+  --input-bg: #ffffff;
+  --input-border: #000000;
+  --placeholder: #666666;
+  
+  --button-bg: #ffffff;
+  --button-border: #000000;
+  --button-hover: #f0f0f0;
+  
+  --modal-bg: #ffffff;
+  --modal-border: #000000;
+  --modal-shadow: rgba(0, 0, 0, 0.2);
+  
+  --git-added: #008000;
+  --git-modified: #cccc00;
+  --git-deleted: #ff0000;
+  
+  --empty-state: #666666;
+  --toggle-off: #cccccc;
+}
+
+/* ===== SOLARIZED DARK ===== */
+[data-theme="solarized-dark"] {
+  --bg: #002b36;
+  --bg-secondary: #073642;
+  --fg: #839496;
+  --fg-secondary: #657b83;
+  --primary: #b58900;
+  --primary-hover: #cb9e00;
+  --secondary: #2aa198;
+  --accent: #268bd2;
+  --success: #859900;
+  --warning: #b58900;
+  --error: #dc322f;
+  --info: #268bd2;
+  --selection: #073642;
+  --border: #586e75;
+  --border-light: #2d4b54;
+  --hover: #073642;
+  --active: #586e75;
+  
+  --sidebar-bg: #073642;
+  --sidebar-hover: #2d4b54;
+  --sidebar-active: #586e75;
+  
+  --tab-bg: #073642;
+  --tab-active: #002b36;
+  --tab-border: #586e75;
+  
+  --status-bg: #b58900;
+  --status-fg: #002b36;
+  
+  --editor-bg: #002b36;
+  --editor-line-number: #586e75;
+  
+  --terminal-bg: #002b36;
+  --terminal-fg: #839496;
+  
+  --git-added: #859900;
+  --git-modified: #b58900;
+  --git-deleted: #dc322f;
+}
+
+/* ===== NORD THEME ===== */
+[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg-secondary: #3b4252;
+  --fg: #d8dee9;
+  --fg-secondary: #e5e9f0;
+  --primary: #88c0d0;
+  --primary-hover: #8fbcbb;
+  --secondary: #81a1c1;
+  --accent: #b48ead;
+  --success: #a3be8c;
+  --warning: #ebcb8b;
+  --error: #bf616a;
+  --info: #81a1c1;
+  --selection: #434c5e;
+  --border: #4c566a;
+  --border-light: #3b4252;
+  --hover: #3b4252;
+  --active: #434c5e;
+  
+  --sidebar-bg: #3b4252;
+  --sidebar-hover: #434c5e;
+  --sidebar-active: #4c566a;
+  
+  --tab-bg: #3b4252;
+  --tab-active: #2e3440;
+  --tab-border: #4c566a;
+  
+  --status-bg: #88c0d0;
+  --status-fg: #2e3440;
+  
+  --editor-bg: #2e3440;
+  --editor-line-number: #4c566a;
+  
+  --terminal-bg: #2e3440;
+  --terminal-fg: #d8dee9;
+  
+  --git-added: #a3be8c;
+  --git-modified: #ebcb8b;
+  --git-deleted: #bf616a;
+}
+
+/* ===== MONOKAI THEME ===== */
+[data-theme="monokai"] {
+  --bg: #272822;
+  --bg-secondary: #2d2e27;
+  --fg: #f8f8f2;
+  --fg-secondary: #cfcfc2;
+  --primary: #a6e22e;
+  --primary-hover: #b8f03e;
+  --secondary: #66d9ef;
+  --accent: #fd971f;
+  --success: #a6e22e;
+  --warning: #fd971f;
+  --error: #f92672;
+  --info: #66d9ef;
+  --selection: #49483e;
+  --border: #75715e;
+  --border-light: #3e3d32;
+  --hover: #2d2e27;
+  --active: #49483e;
+  
+  --sidebar-bg: #2d2e27;
+  --sidebar-hover: #3e3d32;
+  --sidebar-active: #49483e;
+  
+  --tab-bg: #2d2e27;
+  --tab-active: #272822;
+  --tab-border: #75715e;
+  
+  --status-bg: #a6e22e;
+  --status-fg: #272822;
+  
+  --editor-bg: #272822;
+  --editor-line-number: #75715e;
+  
+  --terminal-bg: #272822;
+  --terminal-fg: #f8f8f2;
+  
+  --git-added: #a6e22e;
+  --git-modified: #fd971f;
+  --git-deleted: #f92672;
+}

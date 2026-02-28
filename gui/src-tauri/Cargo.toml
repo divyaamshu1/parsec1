@@ -1,0 +1,57 @@
+[package]
+name = "parsec-gui-src-tauri"
+version = "0.1.0"
+description = "Parsec IDE - The last IDE you'll ever need"
+authors = ["divyaamshu1"]
+license = "MIT"
+repository = "https://github.com/divyaamshu1/parsec"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = ["api-all"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Parsec backend crates
+extension-registry = { path = "../../crates/extension-registry" }
+parsec-core = { path = "../../core" }
+parsec-extensions = { path = "../../extensions" }
+parsec-ai = { path = "../../ai" }
+parsec-vscode-compat = { path = "../../vscode-compat" }
+parsec-cloud = { path = "../../crates/cloud" }
+parsec-database = { path = "../../crates/database" }
+parsec-mobile = { path = "../../crates/mobile-dev" }
+parsec-collaboration = { path = "../../crates/collaboration" }
+parsec-learning = { path = "../../crates/learning" }
+parsec-design = { path = "../../crates/design" }
+parsec-monitoring = { path = "../../crates/monitoring" }
+parsec-accessibility = { path = "../../crates/accessibility" }
+parsec-customization = { path = "../../crates/customization" }
+parsec-terminal = { path = "../../crates/terminal" }
+parsec-debug = { path = "../../crates/debugging" }
+parsec-git = { path = "../../crates/git" }
+parsec-testing = { path = "../../crates/testing" }
+parsec-api = { path = "../../crates/api-client" }
+
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+opt-level = 0
+lto = false
+codegen-units = 16
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

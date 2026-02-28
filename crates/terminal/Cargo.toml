@@ -2,54 +2,78 @@
 name = "parsec-terminal"
 version = "0.1.0"
 edition = "2021"
-description = "Advanced terminal emulator for Parsec IDE"
-authors = ["divyaamshu1"]
-license = "MIT"
-repository = "https://github.com/divyaamshu1/parsec"
-homepage = "https://github.com/divyaamshu1/parsec"
-
-[lib]
-crate-type = ["rlib", "cdylib"]
-
-[dependencies]
-# Core
-anyhow = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tracing = { workspace = true }
-futures = { workspace = true }
-async-trait = { workspace = true }
-thiserror = { workspace = true }
-uuid = { workspace = true, features = ["v4", "serde"] }
-chrono = { workspace = true, features = ["serde"] }
-
-# Terminal
-crossterm = { version = "0.27", features = ["event-stream"] }
-ratatui = "0.26"
-termwiz = "0.20"
-vte = "0.11"
-
-# PTY
-pty-process = "0.4"
-nix = { version = "0.29"}
-
-# Parsec dependencies
-parsec-core = { path = "../../core" }
-parsec-extensions = { path = "../../extensions" }
-
-[dev-dependencies]
-tempfile = "3.8"
+description = "Advanced terminal emulator with multiplexing, splits, and search"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [features]
-default = ["multiplexer", "split", "search", "themes"]
-multiplexer = []
-split = []
-search = []
-themes = []
+default = ["pty"]
+pty = ["dep:tokio", "dep:nix", "dep:windows"]
+serde = ["dep:serde", "dep:serde_json", "dep:serde_repr"]
+wasm = ["dep:wasm-bindgen"]
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-strip = true
+[dependencies]
+# Core dependencies
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+# Tokio is only needed for pty support, so make it optional and tie it to the "pty" feature
+tokio = { workspace = true, features = ["full"], optional = true }
+futures = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+serde_repr = { version = "0.1", optional = true }
+chrono = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+parking_lot = { workspace = true }
+once_cell = "1.20"
+lazy_static = "1.5"
+
+# PTY support
+# nix crate provides POSIX APIs; no special features needed currently
+nix = { version = "0.29", optional = true }
+windows = { version = "0.58", optional = true, features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+    "Win32_System_Threading",
+    "Win32_Security"
+] }
+
+# Terminal emulation
+vt100 = "0.15"
+unicode-width = "0.2"
+unicode-segmentation = "1.12"
+ansi-to-tui = "3.0"
+termwiz = { version = "0.22", optional = true }
+
+# Search
+regex = { workspace = true }
+fuzzy-matcher = "0.3"
+
+# Split management
+slotmap = "1.0"
+
+# WebAssembly support
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true, features = [
+    "console",
+    "Window",
+    "Document",
+    "HtmlElement",
+    "WebSocket"
+] }
+
+[target.'cfg(unix)'.dependencies]
+signal-hook = "0.3"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+
+[dev-dependencies]
+tempfile = "3.13"
+criterion = "0.5"
+
+[[bench]]
+name = "terminal_bench"
+path = "benches/terminal_bench.rs"
+harness = false

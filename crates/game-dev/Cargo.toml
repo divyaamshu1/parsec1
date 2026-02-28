@@ -31,14 +31,14 @@ lsp-types = "0.94"
 lsp-server = "0.7"
 
 # DAP
-dap = "0.2"
-dap-types = "0.2"
+dap = "0.4.1-alpha1"
+dap-types = "0.0.1"
 
 # Asset handling
 image = "0.24"
 gltf = "1.4"
-obj = "0.12"
-audio = "0.8"
+obj = "0.10.2"
+audio = "0.2.1"
 serde_yaml = "0.9"
 toml = "0.8"
 

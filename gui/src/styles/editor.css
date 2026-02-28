@@ -1,0 +1,325 @@
+/* ===== EDITOR CONTAINER ===== */
+.editor-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--editor-bg);
+}
+
+.editor-container.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== LINE NUMBERS ===== */
+.line-numbers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  background: var(--editor-gutter);
+  color: var(--editor-line-number);
+  text-align: right;
+  padding: 10px 5px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.line-number {
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+/* ===== MINIMAP ===== */
+.minimap {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100px;
+  background: var(--editor-gutter);
+  border-left: 1px solid var(--border);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ===== AI INDICATOR ===== */
+.ai-indicator {
+  position: absolute;
+  top: 10px;
+  right: 120px;
+  background: var(--primary);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.ai-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ===== SEARCH PANEL ===== */
+.editor-search {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 4px 12px var(--modal-shadow);
+  z-index: 200;
+  min-width: 300px;
+}
+
+.search-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--placeholder);
+}
+
+.search-input-group input {
+  flex: 1;
+  padding: 6px 8px 6px 32px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--fg);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.match-count {
+  position: absolute;
+  right: 8px;
+  color: var(--placeholder);
+  font-size: 12px;
+}
+
+.search-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.search-actions button {
+  padding: 4px 8px;
+  background: var(--button-bg);
+  border: 1px solid var(--button-border);
+  color: var(--fg);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-actions button:hover {
+  background: var(--button-hover);
+}
+
+.search-replace {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-replace input {
+  padding: 6px 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--fg);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.replace-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.replace-actions button {
+  padding: 4px 12px;
+  background: var(--primary);
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.replace-actions button:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== CODE HIGHLIGHTING ===== */
+.token.comment {
+  color: var(--success);
+  font-style: italic;
+}
+
+.token.keyword {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.token.string {
+  color: var(--accent);
+}
+
+.token.number {
+  color: var(--info);
+}
+
+.token.function {
+  color: var(--secondary);
+}
+
+.token.operator {
+  color: var(--fg);
+}
+
+.token.variable {
+  color: var(--fg);
+}
+
+.token.type {
+  color: var(--success);
+}
+
+/* ===== CURSOR ===== */
+.cursor {
+  position: absolute;
+  width: 2px;
+  height: 1.2em;
+  background: var(--fg);
+  animation: blink 1s infinite;
+  pointer-events: none;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ===== SELECTION ===== */
+.selection {
+  position: absolute;
+  background: var(--selection);
+  pointer-events: none;
+}
+
+/* ===== BRACKET MATCHING ===== */
+.bracket-match {
+  position: absolute;
+  background: rgba(255, 255, 0, 0.1);
+  border: 1px solid var(--warning);
+  pointer-events: none;
+}
+
+/* ===== CODE LENS ===== */
+.code-lens {
+  position: absolute;
+  right: 20px;
+  color: var(--fg-secondary);
+  font-size: 11px;
+  background: var(--bg);
+  padding: 2px 4px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.code-lens:hover {
+  color: var(--primary);
+}
+
+/* ===== INLAY HINTS ===== */
+.inlay-hint {
+  color: var(--fg-secondary);
+  font-size: 11px;
+  font-style: italic;
+  margin-left: 4px;
+}
+
+/* ===== DIFF VIEWER ===== */
+.diff-viewer {
+  background: var(--bg);
+  font-family: 'Cascadia Code', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diff-line {
+  display: flex;
+  padding: 0 10px;
+  white-space: pre;
+}
+
+.diff-line.added {
+  background: var(--success-bg);
+}
+
+.diff-line.removed {
+  background: var(--error-bg);
+}
+
+.diff-line.header {
+  background: var(--selection);
+  color: var(--fg-secondary);
+}
+
+.line-marker {
+  width: 20px;
+  display: inline-block;
+  text-align: right;
+  margin-right: 10px;
+  color: var(--fg-secondary);
+}
+
+.line-content {
+  flex: 1;
+}
+
+/* ===== ERROR SQUIGGLES ===== */
+.error-squiggle {
+  position: absolute;
+  border-bottom: 2px wavy var(--error);
+  pointer-events: none;
+}
+
+.warning-squiggle {
+  border-bottom: 2px wavy var(--warning);
+}

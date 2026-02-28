@@ -1,10 +1,85 @@
 [package]
-name = "monitoring"
-version.workspace = true
-edition.workspace = true
+name = "parsec-monitoring"
+version = "0.1.0"
+edition = "2021"
+description = "Performance monitoring and observability for Parsec IDE"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
+
+[features]
+default = ["metrics", "logs", "traces"]
+profiler = ["dep:puffin", "dep:pprof"]
+metrics = ["dep:prometheus", "dep:metrics"]
+logs = ["dep:tracing-appender", "dep:tokio-util"]
+traces = ["dep:opentelemetry", "dep:opentelemetry-jaeger", "dep:tracing-opentelemetry"]
+web = ["dep:web-sys", "dep:js-sys", "dep:wasm-bindgen"]
 
 [dependencies]
+# Core dependencies
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+futures = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "parking_lot"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true, features = ["v4", "v5", "serde"] }
+parking_lot = { workspace = true }
+once_cell = "1.20"
+lazy_static = "1.5"
+
+# Profiling
+puffin = { version = "0.19", optional = true }
+pprof = { version = "0.14", optional = true, features = ["flamegraph", "protobuf"] }
+
+# Metrics
+prometheus = { version = "0.13", optional = true, features = ["process"] }
+metrics = { version = "0.23", optional = true }
+metrics-exporter-prometheus = { version = "0.15", optional = true }
+
+# Logs
+tracing-appender = { version = "0.2", optional = true }
+tokio-util = { version = "0.7", optional = true, features = ["codec", "io"] }
+
+# Traces
+opentelemetry = { version = "0.24", optional = true, features = ["trace", "metrics", "logs"] }
+opentelemetry-jaeger = { version = "0.22", optional = true, features = ["collector_client", "rt-tokio"] }
+tracing-opentelemetry = { version = "0.25", optional = true }
+
+# System monitoring
+sysinfo = "0.31"
+# Use nvml-wrapper to access NVIDIA Management Library
+nvml-wrapper = { version = "0.12", optional = true }
+
+# Web platform
+web-sys = { version = "0.3", optional = true, features = [
+    "console",
+    "Performance",
+    "PerformanceEntry",
+    "PerformanceObserver",
+    "PerformanceTiming",
+    "Navigator",
+    "Window"
+] }
+js-sys = { version = "0.3", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+
+# Utilities
+infer = "0.16"
+humansize = "2.1"
+notify = "6.1"
+usvg = "0.43"
+rand = "0.8"
+dirs = "5.0"
+
+[dev-dependencies]
+tempfile = "3.13"
+criterion = "0.5"
+
+[[bench]]
+name = "monitoring_bench"
+path = "benches/monitoring_bench.rs"
+harness = false

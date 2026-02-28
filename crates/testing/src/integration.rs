@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 use tracing::{info, warn, debug};
 
 #[cfg(feature = "integration")]
-use mockito::Server;
+use mockito::{Server, ServerGuard};
 #[cfg(feature = "integration")]
 use wiremock::MockServer;
 
@@ -24,7 +24,7 @@ pub struct IntegrationTestRunner {
 /// Mock server handle
 pub enum MockServerHandle {
     #[cfg(feature = "integration")]
-    Mockito(Server),
+    Mockito(ServerGuard),
     #[cfg(feature = "integration")]
     WireMock(MockServer),
     Custom(String),
@@ -46,7 +46,7 @@ impl IntegrationTestRunner {
         // Scan for integration tests in the test directory
         let test_files = self.scan_test_files().await?;
         
-        let mut results = Vec::new();
+        let results: Vec<_> = Vec::new();
         let mut summary = TestSummary::default();
 
         for file in test_files {
@@ -103,7 +103,7 @@ impl IntegrationTestRunner {
         let mut servers = self.mock_servers.lock().await;
         
         // Start mockito server
-        let mut server = Server::new();
+        let server = Server::new();
         let url = server.url();
         
         servers.insert(name.to_string(), MockServerHandle::Mockito(server));

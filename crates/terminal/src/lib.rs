@@ -1,248 +1,347 @@
-//! Advanced Terminal Emulator for Parsec IDE
+//! Parsec Terminal Emulator
 //!
-//! This crate provides a full-featured terminal emulator with
-//! multiplexing, split views, search, and theming support.
+//! A feature-rich terminal emulator with support for:
+//! - Multiple terminal multiplexing
+//! - Split panes (horizontal/vertical)
+//! - Search with regex and fuzzy matching
+//! - Custom themes
+//! - Full PTY support (Unix/Windows)
+//! - WebAssembly support for web terminals
+//! - Serialization for state persistence
 
-#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(dead_code, unused_imports)]
 
 pub mod multiplexer;
 pub mod split;
 pub mod search;
 pub mod themes;
+mod error;
+mod pty;
+mod renderer;
+mod buffer;
+mod selection;
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+// Re-exports
+pub use error::TerminalError;
+pub use multiplexer::{Multiplexer, TerminalSession, SessionEvent};
+pub use split::{SplitManager, SplitPane, PaneId, Direction};
+pub use search::{TerminalSearch, SearchMatch, SearchOptions, SearchDirection};
+pub use themes::{Theme, ThemeManager, ColorScheme, FontStyle};
+pub use pty::{PtyProcess, PtySize, PtyEvent};
+pub use renderer::{TerminalRenderer, Cell};
+pub use buffer::TerminalBuffer;
+pub use selection::Selection;
+
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
-use anyhow::{Result, anyhow};
-use async_trait::async_trait;
-use tokio::sync::{RwLock, Mutex};
-use tracing::{info, warn, debug};
-use serde::{Serialize, Deserialize};
+/// Result type for terminal operations
+pub type Result<T> = std::result::Result<T, TerminalError>;
 
-pub use multiplexer::*;
-pub use split::*;
-pub use search::*;
-pub use themes::*;
-
-/// Main terminal manager
-pub struct TerminalManager {
-    terminals: Arc<RwLock<HashMap<String, TerminalInstance>>>,
-    multiplexer: Arc<multiplexer::TerminalMultiplexer>,
-    split_manager: Arc<split::SplitManager>,
-    search_manager: Arc<search::SearchManager>,
-    theme_manager: Arc<themes::ThemeManager>,
-    config: TerminalConfig,
-}
-
-/// Terminal configuration
+/// Terminal instance configuration
 #[derive(Debug, Clone)]
 pub struct TerminalConfig {
-    pub shell: Option<String>,
-    pub shell_args: Vec<String>,
-    pub working_dir: Option<PathBuf>,
-    pub env: HashMap<String, String>,
+    /// Initial rows
+    pub rows: u16,
+    /// Initial columns
+    pub cols: u16,
+    /// Scrollback buffer size
     pub scrollback_lines: usize,
-    pub font_size: u32,
-    pub font_family: String,
-    pub cursor_style: CursorStyle,
-    pub cursor_blink: bool,
-    pub bell_style: BellStyle,
-    pub mouse_support: bool,
+    /// Theme name
+    pub theme: String,
+    /// Enable true color (24-bit)
+    pub true_color: bool,
+    /// Enable bracketed paste mode
     pub bracketed_paste: bool,
-    pub alt_screen: bool,
+    /// Enable focus events
+    pub focus_events: bool,
+    /// Mouse reporting mode
+    pub mouse_mode: MouseMode,
+    /// Cursor style
+    pub cursor_style: CursorStyle,
+    /// Font family
+    pub font_family: String,
+    /// Font size in pixels
+    pub font_size: u16,
+    /// Line height
+    pub line_height: f32,
+    /// Enable blinking cursor
+    pub blink_cursor: bool,
+    /// Shell path
+    pub shell: Option<String>,
+    /// Working directory
+    pub working_dir: Option<String>,
+    /// Environment variables
+    pub env: Vec<(String, String)>,
 }
 
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
-            shell: None,
-            shell_args: Vec::new(),
-            working_dir: None,
-            env: HashMap::new(),
+            rows: 24,
+            cols: 80,
             scrollback_lines: 10000,
-            font_size: 12,
-            font_family: "Cascadia Code, monospace".to_string(),
-            cursor_style: CursorStyle::Block,
-            cursor_blink: true,
-            bell_style: BellStyle::Visual,
-            mouse_support: true,
+            theme: "dark".to_string(),
+            true_color: true,
             bracketed_paste: true,
-            alt_screen: true,
+            focus_events: false,
+            mouse_mode: MouseMode::default(),
+            cursor_style: CursorStyle::Block,
+            font_family: "monospace".to_string(),
+            font_size: 14,
+            line_height: 1.2,
+            blink_cursor: true,
+            shell: None,
+            working_dir: None,
+            env: Vec::new(),
         }
     }
 }
 
-/// Terminal instance
-#[derive(Debug)]
-pub struct TerminalInstance {
-    pub id: String,
-    pub title: String,
-    pub process_id: Option<u32>,
-    pub working_dir: Option<PathBuf>,
-    pub rows: u16,
-    pub cols: u16,
-    pub config: TerminalConfig,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+/// Mouse reporting mode
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseMode {
+    /// Mouse reporting disabled
+    Disabled,
+    /// Basic mouse tracking (click events)
+    Basic,
+    /// Mouse tracking with drag events
+    Drag,
+    /// Mouse tracking with motion events
+    Motion,
+    /// SGR extended mouse mode (1006)
+    Sgr,
+    /// URXVT extended mouse mode (1015)
+    Urxvt,
 }
 
-/// Cursor style
+/// Cursor appearance style
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CursorStyle {
     Block,
+    Beam,
     Underline,
-    Bar,
 }
 
-/// Bell style
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BellStyle {
-    None,
-    Visual,
-    Audible,
+impl Default for MouseMode {
+    fn default() -> Self {
+        MouseMode::Disabled
+    }
 }
 
 /// Terminal event
 #[derive(Debug, Clone)]
 pub enum TerminalEvent {
-    Output(String),
-    Input(String),
-    Resized(u16, u16),
-    TitleChanged(String),
+    /// Data received from PTY
+    Data(Vec<u8>),
+    /// Terminal resized
+    Resized { rows: u16, cols: u16 },
+    /// Bell character received
     Bell,
-    Closed,
-    Error(String),
+    /// Title changed
+    TitleChanged(String),
+    /// Icon name changed
+    IconNameChanged(String),
+    /// Clipboard request
+    ClipboardRequest(String),
+    /// Color palette changed
+    PaletteChanged(Vec<(u8, [u8; 3])>),
+    /// Mouse event
+    Mouse(MouseEvent),
+    /// Focus gained
+    FocusGained,
+    /// Focus lost
+    FocusLost,
+    /// OSC command
+    OscCommand(u16, Vec<String>),
 }
 
-impl TerminalManager {
-    /// Create new terminal manager
-    pub fn new(config: TerminalConfig) -> Result<Self> {
-        Ok(Self {
-            terminals: Arc::new(RwLock::new(HashMap::new())),
-            multiplexer: Arc::new(multiplexer::TerminalMultiplexer::new()?),
-            split_manager: Arc::new(split::SplitManager::new()?),
-            search_manager: Arc::new(search::SearchManager::new()?),
-            theme_manager: Arc::new(themes::ThemeManager::new()?),
-            config,
-        })
+/// Mouse event
+#[derive(Debug, Clone, Copy)]
+pub struct MouseEvent {
+    pub button: MouseButton,
+    pub action: MouseAction,
+    pub modifiers: u8,
+    pub row: u16,
+    pub col: u16,
+}
+
+/// Mouse button
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseButton {
+    Left,
+    Middle,
+    Right,
+    WheelUp,
+    WheelDown,
+    WheelLeft,
+    WheelRight,
+    None,
+}
+
+/// Mouse action
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseAction {
+    Press,
+    Release,
+    Click,
+    Drag,
+    Motion,
+}
+
+/// Terminal statistics
+#[derive(Debug, Clone, Default)]
+pub struct TerminalStats {
+    /// Bytes written to PTY
+    pub bytes_written: u64,
+    /// Bytes read from PTY
+    pub bytes_read: u64,
+    /// Number of lines scrolled
+    pub lines_scrolled: u64,
+    /// Number of bell events
+    pub bell_count: u64,
+    /// Peak memory usage
+    pub peak_memory_kb: usize,
+    /// Current memory usage
+    pub current_memory_kb: usize,
+    /// Uptime in seconds
+    pub uptime_secs: u64,
+    /// Number of resize events
+    pub resize_count: u32,
+}
+
+/// Terminal handle for interacting with a running terminal
+#[derive(Clone)]
+pub struct TerminalHandle {
+    id: String,
+    multiplexer: Arc<RwLock<Multiplexer>>,
+}
+
+impl TerminalHandle {
+    /// Create new terminal handle
+    pub fn new(id: String, multiplexer: Arc<RwLock<Multiplexer>>) -> Self {
+        Self { id, multiplexer }
     }
 
-    /// Create new terminal
-    pub async fn create_terminal(&self, id: Option<String>, config: Option<TerminalConfig>) -> Result<String> {
-        let id = id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-        let config = config.unwrap_or_else(|| self.config.clone());
-
-        // Start PTY process
-        let process = self.spawn_shell(&config).await?;
-
-        let terminal = TerminalInstance {
-            id: id.clone(),
-            title: "Terminal".to_string(),
-            process_id: Some(process),
-            working_dir: config.working_dir.clone(),
-            rows: 24,
-            cols: 80,
-            config,
-            created_at: chrono::Utc::now(),
-        };
-
-        self.terminals.write().await.insert(id.clone(), terminal);
-        Ok(id)
+    /// Get terminal ID
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
-    /// Spawn shell process
-    async fn spawn_shell(&self, config: &TerminalConfig) -> Result<u32> {
-        use std::os::unix::process::CommandExt;
-        use nix::pty::*;
-        use nix::unistd::*;
-
-        let shell = config.shell.clone().unwrap_or_else(|| {
-            if cfg!(windows) {
-                "powershell.exe".to_string()
-            } else {
-                std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string())
-            }
-        });
-
-        // Open PTY
-        let (master, slave) = openpty(None, &Winsize {
-            ws_row: 24,
-            ws_col: 80,
-            ws_xpixel: 0,
-            ws_ypixel: 0,
-        })?;
-
-        // Fork process
-        match fork()? {
-            ForkResult::Parent { child } => {
-                // Parent process
-                close(slave)?;
-                Ok(child.as_raw() as u32)
-            }
-            ForkResult::Child => {
-                // Child process
-                setsid()?;
-                
-                // Setup slave as stdio
-                let slave_fd = slave;
-                dup2(slave_fd, 0)?;
-                dup2(slave_fd, 1)?;
-                dup2(slave_fd, 2)?;
-                
-                close(master)?;
-                close(slave_fd)?;
-
-                // Change directory
-                if let Some(dir) = &config.working_dir {
-                    chdir(dir)?;
-                }
-
-                // Set environment
-                for (key, value) in &config.env {
-                    std::env::set_var(key, value);
-                }
-
-                // Execute shell
-                let error = Command::new(&shell).args(&config.shell_args).exec();
-                panic!("Failed to execute shell: {}", error);
-            }
+    /// Write data to terminal
+    pub async fn write(&self, data: &[u8]) -> Result<()> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            session.write(data).await?;
+            Ok(())
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
         }
     }
 
-    /// Get terminal
-    pub async fn get_terminal(&self, id: &str) -> Option<TerminalInstance> {
-        self.terminals.read().await.get(id).cloned()
+    /// Resize terminal
+    pub async fn resize(&self, rows: u16, cols: u16) -> Result<()> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            session.resize(rows, cols).await?;
+            Ok(())
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
     }
 
-    /// List terminals
-    pub async fn list_terminals(&self) -> Vec<TerminalInstance> {
-        self.terminals.read().await.values().cloned().collect()
+    /// Clear terminal
+    pub async fn clear(&self) -> Result<()> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            session.clear().await?;
+            Ok(())
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Clear scrollback buffer
+    pub async fn clear_scrollback(&self) -> Result<()> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            session.clear_scrollback().await?;
+            Ok(())
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get terminal content
+    pub async fn content(&self) -> Result<Vec<Vec<Cell>>> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.content().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get visible content with scroll offset
+    pub async fn visible_content(&self) -> Result<Vec<Vec<Cell>>> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.visible_content().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get cursor position
+    pub async fn cursor_position(&self) -> Result<(u16, u16)> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.cursor_position().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get terminal size
+    pub async fn size(&self) -> Result<(u16, u16)> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.size().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get terminal title
+    pub async fn title(&self) -> Result<String> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.title().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
+    }
+
+    /// Get terminal stats
+    pub async fn stats(&self) -> Result<TerminalStats> {
+        let multiplexer = self.multiplexer.read().await;
+        if let Some(session) = multiplexer.get_session(&self.id) {
+            Ok(session.stats().await)
+        } else {
+            Err(TerminalError::SessionNotFound(self.id.clone()))
+        }
     }
 
     /// Close terminal
-    pub async fn close_terminal(&self, id: &str) -> Result<()> {
-        let mut terminals = self.terminals.write().await;
-        terminals.remove(id);
+    pub async fn close(&self) -> Result<()> {
+        let mut multiplexer = self.multiplexer.write().await;
+        multiplexer.close_session(&self.id).await?;
         Ok(())
     }
 
-    /// Get multiplexer
-    pub fn multiplexer(&self) -> Arc<multiplexer::TerminalMultiplexer> {
-        self.multiplexer.clone()
-    }
-
-    /// Get split manager
-    pub fn split_manager(&self) -> Arc<split::SplitManager> {
-        self.split_manager.clone()
-    }
-
-    /// Get search manager
-    pub fn search_manager(&self) -> Arc<search::SearchManager> {
-        self.search_manager.clone()
-    }
-
-    /// Get theme manager
-    pub fn theme_manager(&self) -> Arc<themes::ThemeManager> {
-        self.theme_manager.clone()
+    /// Check if terminal is alive
+    pub async fn is_alive(&self) -> bool {
+        let multiplexer = self.multiplexer.read().await;
+        multiplexer.get_session(&self.id).map_or(false, |s| s.is_alive())
     }
 }

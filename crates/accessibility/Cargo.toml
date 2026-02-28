@@ -1,10 +1,81 @@
 [package]
-name = "accessibility"
-version.workspace = true
-edition.workspace = true
+name = "parsec-accessibility"
+version = "0.1.0"
+edition = "2021"
+description = "Accessibility features for Parsec IDE"
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
+
+[features]
+default = ["screen-reader", "high-contrast"]
+screen-reader = ["dep:rodio"]
+high-contrast = ["dep:css-color", "dep:palette"]
+voice-control = ["dep:whisper-rs", "dep:vosk", "dep:porcupine", "dep:cpal", "dep:hound"]
+keyboard-nav = []
+dyslexia-friendly = ["dep:regex"]
+color-blind = ["dep:palette"]
+motion-reduction = []
 
 [dependencies]
+# Core dependencies
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+futures = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["v4", "v5", "serde"] }
+parking_lot = { workspace = true }
+once_cell = "1.20"
+lazy_static = "1.5"
+dirs = "4.0"
+
+# Screen reader / TTS
+# tts removed due to clang-sys conflicts with newer bindgen in nodejs-sys
+rodio = { version = "0.19", optional = true }
+syntect = { version = "5.2", optional = true }
+
+# Voice control
+whisper-rs = { version = "0.10", optional = true }
+vosk = { version = "0.3", optional = true }
+porcupine = { version = "0.2.4", optional = true }
+cpal = { version = "0.15", optional = true }
+hound = { version = "3.5", optional = true }
+
+# Color manipulation
+# css-color 0.3 not published; use latest 0.2 series
+css-color = { version = "0.2", optional = true }
+palette = { version = "0.7", optional = true, features = ["named", "approx"] }
+regex = { version = "1.10", optional = true }
+
+# Fonts
+# open-dyslexic font is bundled by other means; no crate dependency needed
+
+# Web platform
+web-sys = { version = "0.3", optional = true, features = [
+    "console",
+    "SpeechSynthesis",
+    "SpeechSynthesisUtterance",
+    "Window",
+    "Navigator"
+] }
+js-sys = { version = "0.3", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+
+# Utilities
+keyboard-types = "0.7"
+enum-iterator = "2.1"
+strum = { version = "0.26", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3.13"
+criterion = "0.5"
+
+[[bench]]
+name = "accessibility_bench"
+path = "benches/accessibility_bench.rs"
+harness = false

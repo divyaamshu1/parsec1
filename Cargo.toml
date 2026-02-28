@@ -1,56 +1,69 @@
 [workspace]
-resolver = "2"
 members = [
+    "gui/src-tauri",
     "core",
-    "vscode-compat",
     "extensions",
     "ai",
-    "gui",
     "cli",
-    "crates/extension-registry",
-    "crates/extension-sdk",
-    "crates/language-extensions", 
-    "crates/mobile-dev", "crates/database", "crates/api-client", "crates/cloud", "crates/testing", "crates/debugging", "crates/terminal", "crates/collaboration", "crates/learning", "crates/design", "crates/monitoring", "crates/accessibility", "crates/customization",
-     ]
+    "vscode-compat",
+    "crates/*",
+]
+resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 authors = ["divyaamshu1"]
 license = "MIT"
-repository = "https://github.com/divyaamshu1/parsec"     # <-- ADD THIS LINE
-homepage = "https://github.com/divyaamshu1/parsec" 
+repository = "https://github.com/divyaamshu1/parsec"
 
+# These settings will be inherited by workspace members
 [workspace.dependencies]
-# Core dependencies
-anyhow = "1.0"
+tauri = { version = "1.5", features = [
+    "api-all", 
+    "window-all", 
+    "shell-all", 
+    "dialog-all", 
+    "fs-all", 
+    "http-all", 
+    "os-all"
+] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"           # <-- ADD THIS
-serde_yaml = "0.9"
-toml = "1.0"
-tokio = { version = "1.49", features = ["full"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
 tracing = "0.1"
-log = "0.4"
+tracing-subscriber = "0.3"
+thiserror = "1.0"
+chrono = "0.4"
+uuid = { version = "1.6", features = ["v4", "serde"] }
 futures = "0.3"
 async-trait = "0.1"
-chrono = "0.4"
-uuid = { version = "1.21", features = ["v4", "serde"] }
 parking_lot = "0.12"
-dirs = "6.0"
-regex = "1.12"
-thiserror = "2.0"
+dirs = "5.0"
+once_cell = "1.19"
+regex = "1.7"
+serde_yaml = "0.9"
+reqwest = { version = "0.11", features = ["json", "gzip"] }
+toml = "0.5"
 
-tauri = "2.10.2"
-tauri-build = "2.5.5"
-tauri-plugin-dialog = "2.6.0"
-tauri-plugin-fs = "2.4.5"
-tauri-plugin-shell = "2.3.5"
-tauri-plugin-window-state = "2.4.1"
-
-# Parsec crates
-parsec-core = { path = "core" }
-parsec-extensions = { path = "extensions" }
-parsec-ai = { path = "ai" }
-parsec-cli = { path = "cli" }
-parsec-gui = { path = "gui" }
-parsec-vscode-compat = { path = "vscode-compat" }
+parsec-core = { path = "../core" }
+parsec-extensions = { path = "../extensions" }
+parsec-ai = { path = "../ai" }
+parsec-vscode-compat = { path = "../vscode-compat" }
+parsec-cloud = { path = "../crates/cloud" }
+parsec-database = { path = "../crates/database" }
+parsec-mobile = { path = "../crates/mobile-dev" }
+parsec-collaboration = { path = "../crates/collaboration" }
+parsec-learning = { path = "../crates/learning" }
+parsec-design = { path = "../crates/design" }
+parsec-monitoring = { path = "../crates/monitoring" }
+parsec-accessibility = { path = "../crates/accessibility" }
+parsec-customization = { path = "../crates/customization" }
+parsec-terminal = { path = "../crates/terminal" }
+parsec-debug = { path = "../crates/debugging" }
+parsec-git = { path = "../crates/git" }
+parsec-testing = { path = "../crates/testing" }
+parsec-api = { path = "../crates/api-client" }
+extension-registry = { path = "../crates/extension-registry" }
+extension-sdk = { path = "../crates/extension-sdk" }

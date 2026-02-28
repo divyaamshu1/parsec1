@@ -1,276 +1,422 @@
-//! Team Collaboration Tools for Parsec IDE
+//! Parsec Collaboration Engine
 //!
-//! This crate provides real-time collaboration features including
-//! live sharing, comments, code review, and presence awareness.
+//! Real-time collaboration features including:
+//! - Live sharing with WebRTC P2P
+//! - Comments and discussions
+//! - Code review workflows
+//! - Presence awareness
+//! - Encrypted communication
+//! - CRDT-based conflict-free editing
 
-#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(dead_code, unused_imports)]
 
 pub mod live_share;
 pub mod comments;
 pub mod review;
 pub mod presence;
+pub mod crdt;
+pub mod signaling;
+pub mod encryption;
+pub mod metrics;
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::collections::HashMap;
+use tokio::sync::{RwLock, broadcast, mpsc};
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
 
-use anyhow::{Result, anyhow};
-use async_trait::async_trait;
-use tokio::sync::{RwLock, Mutex, broadcast};
-use tracing::{info, warn, debug};
-use serde::{Serialize, Deserialize};
+// Re-exports
+pub use live_share::{LiveShare, LiveShareSession, SessionRole, Participant, SessionState};
+pub use comments::{Comment, CommentThread, CommentManager, CommentReply};
+pub use review::{Review, ReviewManager, ReviewStatus, ChangeRequest, Feedback};
+pub use presence::{PresenceManager, UserPresence, Status, Activity};
+pub use crdt::{Document, CrdtManager, Edit, Operation, SyncState};
+pub use signaling::{SignalingServer, SignalingClient, SignalMessage};
+pub use encryption::{EncryptionManager, KeyPair, Cipher, MessageEnvelope};
+pub use metrics::CollaborationMetrics;
 
-pub use live_share::*;
-pub use comments::*;
-pub use review::*;
-pub use presence::*;
+/// Result type for collaboration operations
+pub type Result<T> = std::result::Result<T, CollaborationError>;
 
-/// Main collaboration manager
-pub struct CollaborationManager {
-    sessions: Arc<RwLock<HashMap<String, CollaborationSession>>>,
-    users: Arc<RwLock<HashMap<String, User>>>,
-    live_share: Arc<live_share::LiveShareManager>,
-    comments: Arc<comments::CommentManager>,
-    review: Arc<review::ReviewManager>,
-    presence: Arc<presence::PresenceManager>,
-    event_tx: broadcast::Sender<CollaborationEvent>,
-    config: CollaborationConfig,
+/// Collaboration error
+#[derive(Debug, thiserror::Error)]
+pub enum CollaborationError {
+    #[error("Session not found: {0}")]
+    SessionNotFound(String),
+
+    #[error("Participant not found: {0}")]
+    ParticipantNotFound(String),
+
+    #[error("Permission denied: {0}")]
+    PermissionDenied(String),
+
+    #[error("Connection failed: {0}")]
+    ConnectionFailed(String),
+
+    #[error("Signaling failed: {0}")]
+    SignalingFailed(String),
+
+    #[error("WebRTC error: {0}")]
+    WebRtcError(String),
+
+    #[error("Encryption error: {0}")]
+    EncryptionError(String),
+
+    #[error("CRDT error: {0}")]
+    CrdtError(String),
+
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Channel error")]
+    ChannelError,
+
+    #[error("Timeout")]
+    Timeout,
 }
 
-/// Collaboration configuration
-#[derive(Debug, Clone)]
-pub struct CollaborationConfig {
-    pub server_url: Option<String>,
-    pub signaling_servers: Vec<String>,
-    pub stun_servers: Vec<String>,
-    pub turn_servers: Vec<TurnServer>,
-    pub max_session_size: usize,
-    pub heartbeat_interval: std::time::Duration,
-    pub offline_timeout: std::time::Duration,
-}
-
-/// TURN server configuration
-#[derive(Debug, Clone)]
-pub struct TurnServer {
-    pub url: String,
-    pub username: Option<String>,
-    pub credential: Option<String>,
-}
-
-impl Default for CollaborationConfig {
-    fn default() -> Self {
-        Self {
-            server_url: None,
-            signaling_servers: vec!["wss://signaling.parsec.dev".to_string()],
-            stun_servers: vec!["stun:stun.l.google.com:19302".to_string()],
-            turn_servers: Vec::new(),
-            max_session_size: 10,
-            heartbeat_interval: std::time::Duration::from_secs(30),
-            offline_timeout: std::time::Duration::from_secs(60),
-        }
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for CollaborationError {
+    fn from(_: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        CollaborationError::ChannelError
     }
 }
 
-/// Collaboration session
-#[derive(Debug, Clone)]
-pub struct CollaborationSession {
-    pub id: String,
-    pub name: String,
-    pub owner_id: String,
-    pub participants: Vec<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub settings: SessionSettings,
+impl From<tokio::sync::broadcast::error::SendError<Vec<u8>>> for CollaborationError {
+    fn from(_: tokio::sync::broadcast::error::SendError<Vec<u8>>) -> Self {
+        CollaborationError::ChannelError
+    }
 }
 
-/// Session settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SessionSettings {
-    pub allow_anonymous: bool,
-    pub require_approval: bool,
-    pub read_only: bool,
-    pub allow_comments: bool,
-    pub allow_review: bool,
+impl From<futures::channel::mpsc::SendError> for CollaborationError {
+    fn from(_: futures::channel::mpsc::SendError) -> Self {
+        CollaborationError::ChannelError
+    }
 }
 
-/// User
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct User {
-    pub id: String,
-    pub username: String,
-    pub display_name: Option<String>,
-    pub email: Option<String>,
-    pub avatar_url: Option<String>,
-    pub status: UserStatus,
-    pub last_seen: chrono::DateTime<chrono::Utc>,
+/// User identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct UserId(pub String);
+
+impl UserId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().to_string())
+    }
 }
 
-/// User status
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum UserStatus {
-    Online,
-    Away,
-    Busy,
-    Offline,
-    Invisible,
+impl std::fmt::Display for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Session identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SessionId(pub String);
+
+impl SessionId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().to_string())
+    }
+}
+
+impl std::fmt::Display for SessionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Document identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct DocumentId(pub String);
+
+impl DocumentId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().to_string())
+    }
+}
+
+impl std::fmt::Display for DocumentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 /// Collaboration event
 #[derive(Debug, Clone)]
 pub enum CollaborationEvent {
-    UserJoined(String, User),
-    UserLeft(String),
-    SessionStarted(CollaborationSession),
-    SessionEnded(String),
-    MessageReceived(String, String),
-    FileShared(String, PathBuf),
-    SelectionChanged(String, String, SelectionRange),
-    CursorMoved(String, CursorPosition),
-    CommentAdded(String, Comment),
-    ReviewStarted(String, Review),
+    /// Session events
+    SessionCreated(SessionId, UserId),
+    SessionJoined(SessionId, UserId),
+    SessionLeft(SessionId, UserId),
+    SessionClosed(SessionId),
+
+    /// Participant events
+    ParticipantJoined(SessionId, Participant),
+    ParticipantLeft(SessionId, UserId),
+    ParticipantUpdated(SessionId, Participant),
+
+    /// Document events
+    DocumentOpened(DocumentId, UserId),
+    DocumentClosed(DocumentId, UserId),
+    DocumentChanged(DocumentId, Edit),
+
+    /// Comment events
+    CommentAdded(CommentId),
+    CommentUpdated(CommentId),
+    CommentResolved(CommentId),
+    CommentReplied(CommentId, CommentId),
+
+    /// Review events
+    ReviewCreated(ReviewId),
+    ReviewUpdated(ReviewId),
+    ReviewApproved(ReviewId),
+    ReviewChangesRequested(ReviewId),
+
+    /// Presence events
+    PresenceChanged(UserId, UserPresence),
+    ActivityStarted(UserId, Activity),
+    ActivityEnded(UserId, Activity),
+
+    /// Error events
+    Error(String),
 }
 
-/// Selection range
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SelectionRange {
-    pub start_line: usize,
-    pub start_col: usize,
-    pub end_line: usize,
-    pub end_col: usize,
+/// Comment identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct CommentId(pub String);
+
+impl CommentId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().to_string())
+    }
 }
 
-/// Cursor position
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CursorPosition {
-    pub line: usize,
-    pub col: usize,
+impl std::fmt::Display for CommentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
-impl CollaborationManager {
-    /// Create new collaboration manager
-    pub fn new(config: CollaborationConfig) -> Result<Self> {
-        let (event_tx, _) = broadcast::channel(1000);
+/// Review identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ReviewId(pub String);
 
-        Ok(Self {
-            sessions: Arc::new(RwLock::new(HashMap::new())),
-            users: Arc::new(RwLock::new(HashMap::new())),
-            live_share: Arc::new(live_share::LiveShareManager::new(config.clone())?),
-            comments: Arc::new(comments::CommentManager::new()?),
-            review: Arc::new(review::ReviewManager::new()?),
-            presence: Arc::new(presence::PresenceManager::new(config.clone())?),
-            event_tx,
+impl ReviewId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().to_string())
+    }
+}
+
+impl std::fmt::Display for ReviewId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Collaboration configuration
+#[derive(Debug, Clone)]
+pub struct CollaborationConfig {
+    /// Signaling server URL
+    pub signaling_server: String,
+    /// TURN server URL (optional)
+    pub turn_server: Option<String>,
+    /// TURN credentials
+    pub turn_credentials: Option<(String, String)>,
+    /// STUN server URLs
+    pub stun_servers: Vec<String>,
+    /// Enable encryption
+    pub enable_encryption: bool,
+    /// Enable metrics
+    pub enable_metrics: bool,
+    /// Heartbeat interval (seconds)
+    pub heartbeat_interval: u64,
+    /// Reconnect timeout (seconds)
+    pub reconnect_timeout: u64,
+    /// Max participants per session
+    pub max_participants: usize,
+    /// Compression enabled
+    pub compression: bool,
+}
+
+impl Default for CollaborationConfig {
+    fn default() -> Self {
+        Self {
+            signaling_server: "wss://signaling.parsec.dev".to_string(),
+            turn_server: None,
+            turn_credentials: None,
+            stun_servers: vec![
+                "stun:stun.l.google.com:19302".to_string(),
+                "stun:stun1.l.google.com:19302".to_string(),
+            ],
+            enable_encryption: true,
+            enable_metrics: true,
+            heartbeat_interval: 30,
+            reconnect_timeout: 10,
+            max_participants: 50,
+            compression: true,
+        }
+    }
+}
+
+/// Main collaboration engine
+pub struct CollaborationEngine {
+    /// Configuration
+    config: CollaborationConfig,
+    /// Active sessions
+    sessions: Arc<RwLock<HashMap<SessionId, LiveShareSession>>>,
+    /// Presence manager
+    presence: Arc<PresenceManager>,
+    /// Comment manager
+    comments: Arc<CommentManager>,
+    /// Review manager
+    reviews: Arc<ReviewManager>,
+    /// CRDT manager
+    crdt: Arc<CrdtManager>,
+    /// Encryption manager
+    encryption: Arc<EncryptionManager>,
+    /// Metrics
+    metrics: Arc<CollaborationMetrics>,
+    /// Event broadcaster
+    event_tx: broadcast::Sender<CollaborationEvent>,
+    /// Event receiver
+    event_rx: broadcast::Receiver<CollaborationEvent>,
+    /// Current user
+    current_user: UserId,
+}
+
+impl CollaborationEngine {
+    /// Create new collaboration engine
+    pub fn new(config: CollaborationConfig, current_user: UserId) -> Self {
+        let (event_tx, event_rx) = broadcast::channel(1000);
+
+        Self {
             config,
-        })
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            presence: Arc::new(PresenceManager::new(current_user.clone())),
+            comments: Arc::new(CommentManager::new()),
+            reviews: Arc::new(ReviewManager::new()),
+            crdt: Arc::new(CrdtManager::new()),
+            encryption: Arc::new(EncryptionManager::new()),
+            metrics: Arc::new(CollaborationMetrics::new()),
+            event_tx,
+            event_rx,
+            current_user,
+        }
     }
 
-    /// Start collaboration session
-    pub async fn start_session(&self, name: String, user_id: String, settings: SessionSettings) -> Result<CollaborationSession> {
-        let id = uuid::Uuid::new_v4().to_string();
-        
-        let session = CollaborationSession {
-            id: id.clone(),
+    /// Create a new live share session
+    pub async fn create_session(&self, name: String, password: Option<String>) -> Result<LiveShareSession> {
+        let session = LiveShareSession::new(
             name,
-            owner_id: user_id.clone(),
-            participants: vec![user_id],
-            created_at: chrono::Utc::now(),
-            settings,
-        };
+            self.current_user.clone(),
+            password,
+            self.config.clone(),
+        ).await?;
 
-        self.sessions.write().await.insert(id.clone(), session.clone());
+        self.sessions.write().await.insert(session.id.clone(), session.clone());
         
-        self.event_tx.send(CollaborationEvent::SessionStarted(session.clone()))?;
-        
+        let _ = self.event_tx.send(CollaborationEvent::SessionCreated(
+            session.id.clone(),
+            self.current_user.clone()
+        ));
+
         Ok(session)
     }
 
-    /// Join session
-    pub async fn join_session(&self, session_id: &str, user_id: String) -> Result<()> {
+    /// Join a live share session
+    pub async fn join_session(
+        &self,
+        session_id: SessionId,
+        password: Option<String>,
+    ) -> Result<LiveShareSession> {
         let mut sessions = self.sessions.write().await;
-        if let Some(session) = sessions.get_mut(session_id) {
-            if session.participants.len() >= self.config.max_session_size {
-                return Err(anyhow!("Session is full"));
-            }
-            session.participants.push(user_id.clone());
-            self.event_tx.send(CollaborationEvent::UserJoined(session_id.to_string(), self.get_user(&user_id).await?))?;
-        }
-        Ok(())
+        let session = sessions.get_mut(&session_id)
+            .ok_or_else(|| CollaborationError::SessionNotFound(session_id.to_string()))?;
+
+        session.add_participant(self.current_user.clone(), password).await?;
+
+        let _ = self.event_tx.send(CollaborationEvent::SessionJoined(
+            session_id.clone(),
+            self.current_user.clone()
+        ));
+
+        Ok(session.clone())
     }
 
-    /// Leave session
-    pub async fn leave_session(&self, session_id: &str, user_id: &str) -> Result<()> {
+    /// Leave a session
+    pub async fn leave_session(&self, session_id: SessionId) -> Result<()> {
         let mut sessions = self.sessions.write().await;
-        if let Some(session) = sessions.get_mut(session_id) {
-            session.participants.retain(|p| p != user_id);
-            self.event_tx.send(CollaborationEvent::UserLeft(session_id.to_string()))?;
-        }
-        Ok(())
-    }
+        if let Some(session) = sessions.get_mut(&session_id) {
+            session.remove_participant(&self.current_user).await?;
 
-    /// End session
-    pub async fn end_session(&self, session_id: &str) -> Result<()> {
-        self.sessions.write().await.remove(session_id);
-        self.event_tx.send(CollaborationEvent::SessionEnded(session_id.to_string()))?;
-        Ok(())
-    }
+            let _ = self.event_tx.send(CollaborationEvent::SessionLeft(
+                session_id.clone(),
+                self.current_user.clone()
+            ));
 
-    /// Register user
-    pub async fn register_user(&self, user: User) {
-        self.users.write().await.insert(user.id.clone(), user);
-    }
-
-    /// Get user
-    pub async fn get_user(&self, user_id: &str) -> Result<User> {
-        self.users.read().await.get(user_id)
-            .cloned()
-            .ok_or_else(|| anyhow!("User not found"))
-    }
-
-    /// Update user status
-    pub async fn update_user_status(&self, user_id: &str, status: UserStatus) -> Result<()> {
-        if let Some(user) = self.users.write().await.get_mut(user_id) {
-            user.status = status;
-            user.last_seen = chrono::Utc::now();
-            self.presence.update_presence(user_id, status).await?;
-        }
-        Ok(())
-    }
-
-    /// Get session participants
-    pub async fn get_participants(&self, session_id: &str) -> Result<Vec<User>> {
-        let sessions = self.sessions.read().await;
-        let session = sessions.get(session_id)
-            .ok_or_else(|| anyhow!("Session not found"))?;
-
-        let mut users = Vec::new();
-        for user_id in &session.participants {
-            if let Some(user) = self.users.read().await.get(user_id) {
-                users.push(user.clone());
+            // check participants count directly
+            if session.participants.read().await.is_empty() {
+                sessions.remove(&session_id);
+                let _ = self.event_tx.send(CollaborationEvent::SessionClosed(session_id));
             }
         }
-        Ok(users)
+        Ok(())
     }
 
-    /// Subscribe to collaboration events
-    pub fn subscribe(&self) -> broadcast::Receiver<CollaborationEvent> {
-        self.event_tx.subscribe()
+    /// Get session
+    pub async fn get_session(&self, session_id: &SessionId) -> Option<LiveShareSession> {
+        self.sessions.read().await.get(session_id).cloned()
     }
 
-    /// Get live share manager
-    pub fn live_share(&self) -> Arc<live_share::LiveShareManager> {
-        self.live_share.clone()
+    /// List active sessions
+    pub async fn list_sessions(&self) -> Vec<LiveShareSession> {
+        self.sessions.read().await.values().cloned().collect()
     }
 
-    /// Get comments manager
-    pub fn comments(&self) -> Arc<comments::CommentManager> {
+    /// Get presence manager
+    pub fn presence(&self) -> Arc<PresenceManager> {
+        self.presence.clone()
+    }
+
+    /// Get comment manager
+    pub fn comments(&self) -> Arc<CommentManager> {
         self.comments.clone()
     }
 
     /// Get review manager
-    pub fn review(&self) -> Arc<review::ReviewManager> {
-        self.review.clone()
+    pub fn reviews(&self) -> Arc<ReviewManager> {
+        self.reviews.clone()
     }
 
-    /// Get presence manager
-    pub fn presence(&self) -> Arc<presence::PresenceManager> {
-        self.presence.clone()
+    /// Get CRDT manager
+    pub fn crdt(&self) -> Arc<CrdtManager> {
+        self.crdt.clone()
     }
+
+    /// Subscribe to events
+    pub fn subscribe(&self) -> broadcast::Receiver<CollaborationEvent> {
+        self.event_tx.subscribe()
+    }
+
+    /// Get metrics
+    pub fn metrics(&self) -> Arc<CollaborationMetrics> {
+        self.metrics.clone()
+    }
+}
+
+/// Position in document
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
+
+/// Range in document
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct Range {
+    pub start: Position,
+    pub end: Position,
 }

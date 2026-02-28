@@ -1,5 +1,5 @@
 [package]
-name = "parsec-debugging"
+name = "parsec-debug"
 version = "0.1.0"
 edition = "2021"
 description = "Universal debugger with DAP support for Parsec IDE"
@@ -34,6 +34,7 @@ named_pipe = "0.4"
 
 # Process
 sysinfo = "0.30"
+dirs = "4.0"
 
 # Parsec dependencies
 parsec-core = { path = "../../core" }

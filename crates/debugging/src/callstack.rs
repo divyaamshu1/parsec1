@@ -1,6 +1,7 @@
 //! Callstack management
 
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};

@@ -6,8 +6,11 @@ use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use tracing::{info, warn, debug};
 
-#[cfg(feature = "gcp")]
-use google_cloud::*;
+// storage/pubsub clients are not yet used; imports removed to avoid resolution errors
+// #[cfg(feature = "gcp")]
+// use google_cloud_storage::client::Client;
+// #[cfg(feature = "gcp")]
+// use google_cloud_pubsub::client::ClientConfig;
 
 use crate::{CloudProvider, CloudProviderType, CloudService, ServiceType, ServiceStatus,
             DeploymentConfig, DeploymentResult, ServiceMetrics, CloudConfig};

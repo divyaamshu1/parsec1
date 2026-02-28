@@ -1,5 +1,5 @@
 [package]
-name = "parsec-mobile-dev"
+name = "parsec-mobile"
 version = "0.1.0"
 edition = "2021"
 description = "Unified mobile development system for Parsec IDE"

@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
+use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
@@ -159,7 +160,7 @@ impl DebugAdapter for GenericDAPAdapter {
         let _ = self.send_request("disconnect", None).await?;
         
         let mut client = self.client.lock().await;
-        if let Some(mut client) = client.take() {
+        if let Some(client) = client.take() {
             if let Some(mut process) = client.process.lock().await.take() {
                 process.kill().await?;
             }

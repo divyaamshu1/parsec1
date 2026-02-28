@@ -75,7 +75,9 @@ impl CloudProviderDetector {
         }
 
         // Check if running on GCP
-        if let Ok(metadata) = reqwest::get("http://metadata.google.internal/computeMetadata/v1/")
+        let client = reqwest::Client::new();
+        if let Ok(metadata) = client
+            .get("http://metadata.google.internal/computeMetadata/v1/")
             .header("Metadata-Flavor", "Google")
             .send()
             .await
